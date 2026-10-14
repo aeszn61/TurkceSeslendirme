@@ -1,0 +1,56 @@
+name: Android demo
+
+on:
+  push:
+    paths:
+      - "android/**"
+      - "tests/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  derle:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Python ile uyum testleri
+        run: gradle --no-daemon :tts-tr:test
+
+      - name: APK derle
+        run: gradle --no-daemon :app:assembleRelease
+
+      - name: APK'yı adlandır
+        run: cp app/build/outputs/apk/release/app-release.apk emre-seslendirme-${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: emre-seslendirme-apk
+          path: android/emre-seslendirme-${{ github.run_number }}.apk
+
+      - name: Sürüm olarak yayınla
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-demo-${{ github.run_number }}
+          name: Android demo ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: android/emre-seslendirme-${{ github.run_number }}.apk
+          body: |
+            Telefonla bu sayfayı açıp APK'yı indir ve kur. İlk açılışta "Model seç" ile
+            tr_TR-emre-medium-int8.onnx dosyasını seç.

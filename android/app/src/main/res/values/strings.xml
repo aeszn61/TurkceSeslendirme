@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Emre Seslendirme</string>
+    <string name="pdf_ac">PDF aç</string>
+    <string name="model_sec">Model seç</string>
+    <string name="oku">Oku</string>
+    <string name="durdur">Durdur</string>
+    <string name="hiz">Hız %.1f×</string>
+    <string name="metin_ipucu">Metni buraya yapıştır ya da PDF aç. İmlecin olduğu yerden okur.</string>
+    <string name="model_yok">Model yok: \"Model seç\" ile tr_TR-emre-medium-int8.onnx dosyasını seç.</string>
+    <string name="model_yukleniyor">Model yükleniyor…</string>
+    <string name="model_hatasi">Model yüklenemedi: %s</string>
+    <string name="hazir">Hazır (model %d MB). İmlecin olduğu yerden okur.</string>
+    <string name="okunuyor">Okunuyor…</string>
+    <string name="okunacak_yok">Okunacak metin yok.</string>
+    <string name="bitti">Bitti.</string>
+    <string name="okuma_hatasi">Okuma hatası: %s</string>
+    <string name="pdf_okunuyor">PDF okunuyor…</string>
+    <string name="pdf_hazir">PDF yüklendi (%d karakter).</string>
+    <string name="pdf_hatasi">PDF okunamadı: %s</string>
+    <string name="ornek_metin" formatted="false">Merhaba, ben Emre. Bu ses tamamen telefonda, internet olmadan üretiliyor.\n\n1953 yılında kurulan şirket, 3. kuşakla %40 büyüdü. Toplantı 14.10.2026 günü saat 10:30\'da başlayacak.\n\nProf. Dr. Ayşe Kaya, kitabın ikinci bölümünde Ankara\'daki çocukluk yıllarını anlatıyor.</string>
+</resources>
