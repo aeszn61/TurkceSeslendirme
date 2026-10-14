@@ -59,7 +59,10 @@ object Normalizer {
     private const val EK = "(?:'([a-zçğıöşüâîû]+))?"
     private const val HARFLER = "\\wçğıöşüÇĞİÖŞÜ"
 
-    private fun rx(desen: String) = Regex("(?U)$desen")
+    // (?U) masaüstü JVM'de \w ve \b'yi Unicode yapar; Android'in ICU regex'i bu bayrağı tanımaz ama
+    // orada \w ve \b zaten Unicode'dur.
+    private val UNICODE_BAYRAK = runCatching { Regex("(?U)a") }.isSuccess
+    private fun rx(desen: String) = if (UNICODE_BAYRAK) Regex("(?U)$desen") else Regex(desen)
 
     fun sayiOku(n: Long): String {
         if (n == 0L) return "sıfır"

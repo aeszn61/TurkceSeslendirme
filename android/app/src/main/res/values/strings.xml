@@ -15,6 +15,7 @@
     <string name="okunacak_yok">Okunacak metin yok.</string>
     <string name="bitti">Bitti.</string>
     <string name="okuma_hatasi">Okuma hatası: %s</string>
+    <string name="onceki_hata">Uygulama son açılışta çöktü:\n%s</string>
     <string name="pdf_okunuyor">PDF okunuyor…</string>
     <string name="pdf_hazir">PDF yüklendi (%d karakter).</string>
     <string name="pdf_hatasi">PDF okunamadı: %s</string>

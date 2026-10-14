@@ -33,6 +33,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        hataKaydediciKur()
         setContentView(R.layout.activity_main)
         PDFBoxResourceLoader.init(applicationContext)
 
@@ -69,6 +70,27 @@ class MainActivity : Activity() {
         okuDugmesi.setOnClickListener { if (okuyucu?.okuyor == true) durdur() else oku() }
 
         modeliYukle()
+        oncekiHatayiGoster()
+    }
+
+    /** Uygulama çökerse hatayı dosyaya yazar; bir sonraki açılışta ekranda gösterilir. */
+    private fun hataKaydediciKur() {
+        val dosya = File(filesDir, "hata.txt")
+        val onceki = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            runCatching { dosya.writeText("[${t.name}] " + e.stackTraceToString().take(4000)) }
+            onceki?.uncaughtException(t, e)
+        }
+    }
+
+    private fun oncekiHatayiGoster() {
+        val dosya = File(filesDir, "hata.txt")
+        if (!dosya.exists()) return
+        val hata = runCatching { dosya.readText() }.getOrDefault("")
+        dosya.delete()
+        if (hata.isNotBlank()) {
+            durum.text = getString(R.string.onceki_hata, hata.lineSequence().take(6).joinToString("\n"))
+        }
     }
 
     private fun hizYaz() {
@@ -76,10 +98,15 @@ class MainActivity : Activity() {
     }
 
     private fun modeliYukle() {
-        if (!modelDosyasi.exists()) {
-            // APK'ya gömülü model varsa onu kullan
-            runCatching { assets.open("model.onnx").use { g -> modelDosyasi.outputStream().use { g.copyTo(it) } } }
-                .onFailure { modelDosyasi.delete() }
+        // APK'ya gömülü model varsa ilk açılışta (ve uygulama her güncellendiğinde) onu kullan
+        val surum = packageManager.getPackageInfo(packageName, 0).lastUpdateTime
+        if (!modelDosyasi.exists() || ayarlar.getLong("gomulu_model", 0) != surum) {
+            runCatching {
+                val gecici = File(filesDir, "model.onnx.tmp")
+                assets.open("model.onnx").use { g -> gecici.outputStream().use { g.copyTo(it) } }
+                gecici.renameTo(modelDosyasi)
+                ayarlar.edit().putLong("gomulu_model", surum).apply()
+            }
         }
         if (!modelDosyasi.exists()) {
             durum.setText(R.string.model_yok)
@@ -103,6 +130,15 @@ class MainActivity : Activity() {
     }
 
     private fun oku() {
+        try {
+            okumayaBasla()
+        } catch (t: Throwable) {
+            durdur()
+            durum.text = getString(R.string.okuma_hatasi, t.toString())
+        }
+    }
+
+    private fun okumayaBasla() {
         val s = seslendirici ?: run { durum.setText(R.string.model_yok); return }
         val metin = metinKutusu.text.toString()
         val imlec = metinKutusu.selectionStart.coerceAtLeast(0)
@@ -122,7 +158,7 @@ class MainActivity : Activity() {
             bitti = { hata ->
                 runOnUiThread {
                     okuDugmesi.setText(R.string.oku)
-                    durum.text = if (hata != null) getString(R.string.okuma_hatasi, hata.message) else getString(R.string.bitti)
+                    durum.text = if (hata != null) getString(R.string.okuma_hatasi, hata.toString()) else getString(R.string.bitti)
                 }
             },
         ).also { it.baslat(metin, cumleler, hiz) }

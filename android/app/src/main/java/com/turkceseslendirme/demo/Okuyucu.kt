@@ -45,30 +45,32 @@ class Okuyucu(
         }
 
         calici = thread(name = "calma") {
-            val minTampon = AudioTrack.getMinBufferSize(
-                seslendirici.ornekleme, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT
-            )
-            val iz = AudioTrack.Builder()
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                .setAudioFormat(
-                    AudioFormat.Builder()
-                        .setSampleRate(seslendirici.ornekleme)
-                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                        .build()
-                )
-                .setBufferSizeInBytes(maxOf(minTampon, seslendirici.ornekleme / 2))
-                .setTransferMode(AudioTrack.MODE_STREAM)
-                .build()
-            ses = iz
-            iz.play()
-            val ara = ShortArray(seslendirici.ornekleme / 6) // cümleler arası kısa sessizlik
+            var calmaHatasi: Throwable? = null
+            var iz: AudioTrack? = null
             try {
+                val minTampon = AudioTrack.getMinBufferSize(
+                    seslendirici.ornekleme, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT
+                )
+                iz = AudioTrack.Builder()
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setSampleRate(seslendirici.ornekleme)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(maxOf(minTampon, seslendirici.ornekleme))
+                    .setTransferMode(AudioTrack.MODE_STREAM)
+                    .build()
+                ses = iz
+                iz.play()
+                val ara = ShortArray(seslendirici.ornekleme / 6) // cümleler arası kısa sessizlik
                 while (calisiyor) {
                     val p = kuyruk.poll(100, TimeUnit.MILLISECONDS) ?: continue
                     if (p === son) break
@@ -79,13 +81,15 @@ class Okuyucu(
                 if (calisiyor) {
                     yaz(iz, ShortArray(seslendirici.ornekleme / 2)) // son cümlenin sonu kesilmesin
                 }
+            } catch (t: Throwable) {
+                calmaHatasi = t
             } finally {
-                iz.stop()
-                iz.release()
                 ses = null
+                runCatching { iz?.stop() }
+                runCatching { iz?.release() }
                 val bitirdi = calisiyor
                 calisiyor = false
-                if (bitirdi) bitti(uretimHatasi) else bitti(null)
+                runCatching { bitti(calmaHatasi ?: if (bitirdi) uretimHatasi else null) }
             }
         }
     }
@@ -101,8 +105,8 @@ class Okuyucu(
 
     fun durdur() {
         calisiyor = false
-        ses?.pause()
-        ses?.flush()
+        runCatching { ses?.pause() }
+        runCatching { ses?.flush() }
         uretici?.join(2000)
         calici?.join(2000)
         uretici = null
